@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Heroes of Might and Magic III - Web & Mobile Edition</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Marcellus&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --gold: #dfb15b;
+      --gold-dark: #8b6528;
+      --gold-light: #fff2a8;
+      --panel-bg: #1c150e;
+      --panel-border: #4d3a24;
+      --wood-dark: #120d08;
+      --text-gold: #f5deb3;
+      --accent-red: #8b1e1e;
+      --accent-blue: #1e3a8b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      background: #080604;
+      color: var(--text-gold);
+      font-family: 'Marcellus', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* Main Container with authentic HoMM3 Golden Parchment Frame */
+    .game-viewport {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 1200px;
+      max-height: 750px;
+      background: #000;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 0, 0, 0.8);
+      border: 4px solid var(--gold-dark);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Resource Bar (Gold, Wood, Ore, Mercury, Sulfur, Crystal, Gems) */
+    .resource-bar {
+      height: 38px;
+      background: linear-gradient(180deg, #2b1f13 0%, #171109 100%);
+      border-bottom: 2px solid var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold-light);
+      text-shadow: 1px 1px 2px #000;
+      z-index: 10;
+    }
+
+    .res-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .res-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .res-icon {
+      font-size: 15px;
+      filter: drop-shadow(1px 1px 2px #000);
+    }
+
+    .date-display {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+
+    /* Main Canvas Stage */
+    .canvas-wrapper {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    /* Bottom Control Bar */
+    .control-bar {
+      height: 48px;
+      background: linear-gradient(180deg, #24190f 0%, #120c06 100%);
+      border-top: 2px solid var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      z-index: 10;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-homm {
+      background: linear-gradient(180deg, #4d3a24 0%, #2b1f13 100%);
+      border: 1.5px solid var(--gold);
+      border-radius: 4px;
+      color: var(--gold-light);
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-homm:active {
+      transform: translateY(1px);
+      background: linear-gradient(180deg, #2b1f13 0%, #150f08 100%);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .btn-homm.active {
+      background: linear-gradient(180deg, #8b6528 0%, #523a14 100%);
+      border-color: #fff;
+      color: #fff;
+    }
+
+    .btn-hourglass {
+      background: linear-gradient(180deg, #992222 0%, #4a0d0d 100%);
+      border-color: #ff9999;
+      color: #fff;
+      font-size: 13px;
+      padding: 6px 18px;
+    }
+
+    .btn-hourglass:active {
+      background: linear-gradient(180deg, #4a0d0d 0%, #200404 100%);
+    }
+
+    /* Modals / Overlays (Town Screen, Hero Screen, Battle, Dialogs) */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(3px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .homm-box {
+      background: radial-gradient(circle at center, #261b11 0%, #140d07 100%);
+      border: 3px solid var(--gold);
+      border-radius: 8px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.9), inset 0 0 15px rgba(223, 177, 91, 0.15);
+      max-width: 720px;
+      width: 100%;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    .homm-title {
+      font-family: 'Cinzel', serif;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--gold-light);
+      text-align: center;
+      text-shadow: 0 2px 4px #000, 0 0 10px rgba(223, 177, 91, 0.4);
+      letter-spacing: 1px;
+      border-bottom: 2px solid var(--gold-dark);
+      padding-bottom: 8px;
+    }
+
+    .homm-close {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: none;
+      border: none;
+      color: var(--gold);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    /* Town Screen Grid */
+    .town-buildings {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .building-card {
+      background: rgba(20, 14, 8, 0.85);
+      border: 1.5px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      transition: border-color 0.2s;
+    }
+
+    .building-card.built {
+      border-color: var(--gold);
+      background: rgba(45, 32, 18, 0.5);
+    }
+
+    .building-icon {
+      font-size: 28px;
+    }
+
+    .building-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-light);
+    }
+
+    .building-desc {
+      font-size: 10px;
+      color: #bbb;
+      line-height: 1.3;
+    }
+
+    .btn-recruit {
+      background: linear-gradient(180deg, #2e5927 0%, #153011 100%);
+      border: 1px solid #73d162;
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    /* Combat Interface */
+    .combat-log {
+      position: absolute;
+      bottom: 8px;
+      left: 10px;
+      right: 10px;
+      background: rgba(10, 8, 5, 0.88);
+      border: 1px solid var(--gold-dark);
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 11px;
+      color: #ffeedd;
+      text-align: center;
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* Mobile Quick Controls */
+    @media (max-width: 768px) {
+      .resource-bar {
+        font-size: 11px;
+        padding: 0 6px;
+      }
+      .res-group {
+        gap: 8px;
+      }
+      .btn-homm {
+        padding: 5px 9px;
+        font-size: 11px;
+      }
+      .homm-title {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-viewport">
+    
+    <!-- Top Resource Bar -->
+    <header class="resource-bar">
+      <div class="res-group">
+        <div class="res-item" title="Золото"><span class="res-icon">💰</span> <span id="resGold">10000</span></div>
+        <div class="res-item" title="Деревина"><span class="res-icon">🪵</span> <span id="resWood">20</span></div>
+        <div class="res-item" title="Руда"><span class="res-icon">🪨</span> <span id="resOre">20</span></div>
+        <div class="res-item" title="Ртуть"><span class="res-icon">🧪</span> <span id="resMercury">5</span></div>
+        <div class="res-item" title="Сірка"><span class="res-icon">🔥</span> <span id="resSulfur">5</span></div>
+        <div class="res-item" title="Кристали"><span class="res-icon">💎</span> <span id="resCrystals">5</span></div>
+        <div class="res-item" title="Самоцвіти"><span class="res-icon">✨</span> <span id="resGems">5</span></div>
+      </div>
+      <div class="date-display">
+        Місяць <span id="txtMonth">1</span>, Тижд. <span id="txtWeek">1</span>, День <span id="txtDay">1</span>
+      </div>
+    </header>
+
+    <!-- Main Canvas Viewport (Adventure Map & Battles) -->
+    <div class="canvas-wrapper">
+      <canvas id="gameCanvas" width="960" height="580"></canvas>
+      <div id="combatLog" class="combat-log" style="display: none;"></div>
+    </div>
+
+    <!-- Bottom Controls Navigation -->
+    <footer class="control-bar">
+      <div class="nav-buttons">
+        <button id="btnMap" class="btn-homm active">🗺️ Карта</button>
+        <button id="btnTown" class="btn-homm">🏰 Замок</button>
+        <button id="btnHero" class="btn-homm">🛡️ Герой</button>
+        <button id="btnSpells" class="btn-homm">📜 Магія</button>
+      </div>
+      <div>
+        <button id="btnEndTurn" class="btn-homm btn-hourglass">⏳ Кінець Ходу</button>
+      </div>
+    </footer>
+
+    <!-- Town Modal (Castle Screen) -->
+    <div id="townModal" class="modal-overlay hidden">
+      <div class="homm-box">
+        <button class="homm-close" onclick="switchView('map')">✖</button>
+        <h2 class="homm-title">🏰 Замок Ерафії (Castle of Erathia)</h2>
+        <div class="town-buildings" id="townBuildings">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Modal (Status & Army) -->
+    <div id="heroModal" class="modal-overlay hidden">
+      <div class="homm-box">
+        <button class="homm-close" onclick="switchView('map')">✖</button>
+        <h2 class="homm-title">🛡️ Лицар Крістіан (Christian)</h2>
+        <div style="display: flex; gap: 16px; align-items: center;">
+          <div style="font-size: 48px; border: 2px solid var(--gold); border-radius: 6px; padding: 10px; background: #111;">🏇</div>
+          <div>
+            <p><strong>Рівень:</strong> <span id="heroLevel">1</span> (Досвід: <span id="heroExp">0</span>)</p>
+            <p><strong>Атака:</strong> <span id="heroAtk">2</span> | <strong>Захист:</strong> <span id="heroDef">2</span></p>
+            <p><strong>Сила магії:</strong> <span id="heroPwr">1</span> | <strong>Знання:</strong> <span id="heroKno">1</span> (Мана: <span id="heroMana">10/10</span>)</p>
+            <p><strong>Запас ходу:</strong> <span id="heroMove">100%</span></p>
+          </div>
+        </div>
+        <h3 style="color:var(--gold); font-size:14px; border-bottom:1px solid var(--gold-dark); padding-bottom:4px;">Армія Героя:</h3>
+        <div id="heroArmyList" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+      </div>
+    </div>
+
+    <!-- Spellbook Modal -->
+    <div id="spellModal" class="modal-overlay hidden">
+      <div class="homm-box">
+        <button class="homm-close" onclick="switchView('map')">✖</button>
+        <h2 class="homm-title">📜 Книга Заклять (Spellbook)</h2>
+        <div id="spellList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+          <!-- Spells list -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ==========================================================================
+       HEROES OF MIGHT AND MAGIC III - WEB & MOBILE ENGINE
+       ========================================================================== */
+
+    // 1. Audio Engine (Web Audio API Synthesizer & Effects)
+    class HoMMAudio {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playMove() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.linearRampToValueAtTime(0, t + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.09);
+      }
+      playPickup() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [523, 659, 784, 1046].forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const st = t + idx * 0.06;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, st);
+          gain.gain.setValueAtTime(0.12, st);
+          gain.gain.linearRampToValueAtTime(0, st + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(st);
+          osc.stop(st + 0.14);
+        });
+      }
+      playAttack() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.exponentialRampToValueAtTime(60, t + 0.18);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.linearRampToValueAtTime(0, t + 0.18);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      }
+      playSpell() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, t);
+        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.25);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.linearRampToValueAtTime(0, t + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.32);
+      }
+      playFanfare() {
+        if (!this.ctx) return;
+        const notes = [392, 523, 659, 784, 1046];
+        const t = this.ctx.currentTime;
+        notes.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const st = t + idx * 0.12;
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(f, st);
+          gain.gain.setValueAtTime(0.15, st);
+          gain.gain.linearRampToValueAtTime(0, st + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(st);
+          osc.stop(st + 0.25);
+        });
+      }
+    }
+    const audio = new HoMMAudio();
+
+    // 2. Game State
+    const state = {
+      view: 'map', // 'map', 'town', 'battle'
+      resources: {
+        gold: 10000,
+        wood: 20,
+        ore: 20,
+        mercury: 5,
+        sulfur: 5,
+        crystals: 5,
+        gems: 5
+      },
+      date: {
+        month: 1,
+        week: 1,
+        day: 1
+      },
+      hero: {
+        x: 3,
+        y: 4,
+        movePoints: 20,
+        maxMovePoints: 20,
+        level: 1,
+        exp: 0,
+        atk: 2,
+        def: 2,
+        pwr: 1,
+        kno: 1,
+        mana: 10,
+        maxMana: 10,
+        army: [
+          { type: 'pikeman', name: 'Списоносці', count: 35, hp: 10, maxHp: 10, atk: 4, def: 5, dmgMin: 1, dmgMax: 3, speed: 4, icon: '🛡️' },
+          { type: 'archer', name: 'Луч snake', name: 'Луч snake', count: 18, hp: 10, maxHp: 10, atk: 6, def: 3, dmgMin: 2, dmgMax: 3, speed: 4, ranged: true, shots: 12, icon: '🏹' },
+          { type: 'griffin', name: 'Грифони', count: 7, hp: 25, maxHp: 25, atk: 8, def: 8, dmgMin: 3, dmgMax: 6, speed: 6, icon: '🦅' }
+        ]
+      },
+      buildings: [
+        { id: 'town_hall', name: 'Ратуша (Town Hall)', built: true, cost: { gold: 2500 }, desc: 'Приносить +1000 золота щодня.', icon: '🏛️' },
+        { id: 'citadel', name: 'Цитадель (Citadel)', built: false, cost: { gold: 2500, ore: 5 }, desc: 'Збільшує приріст істот на 50%.', icon: '🏰' },
+        { id: 'mage_guild', name: 'Гільдія магів (Mage Guild)', built: false, cost: { gold: 2000, wood: 5, ore: 5 }, desc: 'Відкриває заклинання 1-го рівня.', icon: '🔮' },
+        { id: 'barracks', name: 'Казарма (Barracks)', built: true, cost: { gold: 1000, wood: 10 }, desc: 'Найм Списоносців (+14 на тиждень).', icon: '⚔️', recruit: { type: 'pikeman', name: 'Списоносець', cost: 60, icon: '🛡️' } },
+        { id: 'archery_tower', name: 'Вежа лучників (Archery Tower)', built: true, cost: { gold: 1500, wood: 5 }, desc: 'Найм Лучників (+9 на тиждень).', icon: '🏹', recruit: { type: 'archer', name: 'Лучник', cost: 100, icon: '🏹' } },
+        { id: 'griffin_tower', name: 'Вежа грифонів (Griffin Tower)', built: false, cost: { gold: 2000, ore: 5 }, desc: 'Найм Грифонів (+7 на тиждень).', icon: '🦅', recruit: { type: 'griffin', name: 'Грифон', cost: 200, icon: '🦅' } }
+      ],
+      spells: [
+        { id: 'magic_arrow', name: 'Магічна стріла (Magic Arrow)', cost: 5, power: 30, icon: '⚡', desc: 'Завдає ворожому загону 30 магічної шкоди.' },
+        { id: 'haste', name: 'Прискорення (Haste)', cost: 6, power: 0, icon: '💨', desc: 'Збільшує швидкість обраного дружнього загону на +3.' },
+        { id: 'heal', name: 'Лікування (Cure)', cost: 6, power: 30, icon: '✨', desc: 'Зцілює 30 одиниць здоров’я дружньому загону.' }
+      ],
+      // Adventure Map Grid (16 x 10)
+      map: []
+    };
+
+    // 3. Initialize Adventure Map
+    const MAP_COLS = 16;
+    const MAP_ROWS = 10;
+    const TILE_SIZE = 58;
+
+    function initMap() {
+      state.map = [];
+      for (let r = 0; r < MAP_ROWS; r++) {
+        state.map[r] = [];
+        for (let c = 0; c < MAP_COLS; c++) {
+          // Terrain: 0: Grass, 1: Dirt road, 2: Mountain (obstacle), 3: Forest (obstacle)
+          let terrain = 0;
+          if (r === 4 || (c === 7 && r >= 2 && r <= 7)) terrain = 1; // road
+          if ((r === 1 && c === 2) || (r === 2 && c === 1) || (r === 7 && c === 12)) terrain = 2; // mountain
+          if ((r === 6 && c === 4) || (r === 2 && c === 9) || (r === 8 && c === 8)) terrain = 3; // trees
+
+          state.map[r][c] = {
+            terrain,
+            object: null // chest, mine, enemy, castle, artifact
+          };
+        }
+      }
+
+      // Place interactive objects
+      state.map[4][1].object = { type: 'castle', name: 'Замок Ерафії', icon: '🏰' };
+      state.map[3][5].object = { type: 'chest', name: 'Скриня зі скарбами', gold: 1500, exp: 1000, icon: '📦' };
+      state.map[2][7].object = { type: 'mine', name: 'Лісопилка', res: 'wood', icon: '🪵' };
+      state.map[6][7].object = { type: 'mine', name: 'Рудник', res: 'ore', icon: '🪨' };
+      state.map[4][8].object = {
+        type: 'monster',
+        name: 'Орда зомбі',
+        count: 24,
+        icon: '🧟',
+        army: [
+          { type: 'zombie', name: 'Мерці (Zombies)', count: 24, hp: 20, maxHp: 20, atk: 5, def: 5, dmgMin: 2, dmgMax: 3, speed: 3, icon: '🧟' }
+        ]
+      };
+      state.map[4][12].object = {
+        type: 'monster',
+        name: 'Зграя вовчих вершників',
+        count: 15,
+        icon: '🐺',
+        army: [
+          { type: 'wolf', name: 'Вовчі вершники (Wolf Riders)', count: 15, hp: 10, maxHp: 10, atk: 7, def: 5, dmgMin: 2, dmgMax: 4, speed: 6, icon: '🐺' }
+        ]
+      };
+      state.map[4][14].object = { type: 'artifact', name: 'Меч Правосуддя', atk: 3, icon: '🗡️' };
+    }
+
+    // 4. Battle Engine
+    let battle = null;
+
+    function startBattle(enemyObject) {
+      audio.playAttack();
+      state.view = 'battle';
+      document.getElementById('combatLog').style.display = 'block';
+
+      battle = {
+        enemyName: enemyObject.name,
+        targetObject: enemyObject,
+        turn: 0,
+        activeUnitIndex: 0,
+        playerUnits: state.hero.army.map((u, i) => ({
+          ...u,
+          side: 'player',
+          curHp: u.hp,
+          hexX: 1,
+          hexY: 2 + i * 2,
+          retaliations: 1
+        })),
+        enemyUnits: enemyObject.army.map((u, i) => ({
+          ...u,
+          side: 'enemy',
+          curHp: u.hp,
+          hexX: 13,
+          hexY: 3 + i * 2,
+          retaliations: 1
+        })),
+        log: `Почався бій з ${enemyObject.name}!`
+      };
+
+      updateCombatLog(battle.log);
+      render();
+    }
+
+    function updateCombatLog(text) {
+      const logEl = document.getElementById('combatLog');
+      logEl.textContent = text;
+      logEl.style.display = 'block';
+    }
+
+    function unitAttack(attacker, defender) {
+      audio.playAttack();
+      // Damage calculation
+      const totalMinDmg = attacker.count * attacker.dmgMin;
+      const totalMaxDmg = attacker.count * attacker.dmgMax;
+      const baseDmg = Math.floor(totalMinDmg + Math.random() * (totalMaxDmg - totalMinDmg + 1));
+      const atkAdvantage = Math.max(-0.7, Math.min(3.0, (attacker.atk - defender.def) * 0.05));
+      const finalDmg = Math.max(1, Math.floor(baseDmg * (1 + atkAdvantage)));
+
+      // Apply damage to stack
+      const totalDefenderHp = (defender.count - 1) * defender.maxHp + defender.curHp;
+      const remainingHp = totalDefenderHp - finalDmg;
+
+      let killed = 0;
+      if (remainingHp <= 0) {
+        killed = defender.count;
+        defender.count = 0;
+      } else {
+        const newCount = Math.ceil(remainingHp / defender.maxHp);
+        killed = defender.count - newCount;
+        defender.count = newCount;
+        defender.curHp = remainingHp % defender.maxHp || defender.maxHp;
+      }
+
+      updateCombatLog(`${attacker.name} атакують ${defender.name}! Нанесено ${finalDmg} шкоди (${killed} загинуло).`);
+
+      // Retaliation if still alive and has retaliation left
+      if (defender.count > 0 && defender.retaliations > 0 && !attacker.ranged) {
+        defender.retaliations--;
+        setTimeout(() => {
+          const retDmg = Math.max(1, Math.floor(defender.count * defender.dmgMin * (1 + (defender.atk - attacker.def) * 0.05)));
+          const retTotHp = (attacker.count - 1) * attacker.maxHp + attacker.curHp;
+          const retRemHp = retTotHp - retDmg;
+          let retKilled = 0;
+          if (retRemHp <= 0) {
+            retKilled = attacker.count;
+            attacker.count = 0;
+          } else {
+            const newCount = Math.ceil(retRemHp / attacker.maxHp);
+            retKilled = attacker.count - newCount;
+            attacker.count = newCount;
+            attacker.curHp = retRemHp % attacker.maxHp || attacker.maxHp;
+          }
+          updateCombatLog(`Контрудар! ${defender.name} завдають ${retDmg} шкоди (${retKilled} ${attacker.name} полягло).`);
+          checkBattleEnd();
+          render();
+        }, 350);
+      } else {
+        checkBattleEnd();
+      }
+    }
+
+    function checkBattleEnd() {
+      const aliveEnemies = battle.enemyUnits.filter(u => u.count > 0);
+      const alivePlayers = battle.playerUnits.filter(u => u.count > 0);
+
+      if (aliveEnemies.length === 0) {
+        audio.playFanfare();
+        updateCombatLog('★ СЛАВЕТНА ПЕРЕМОГА! Ворога розбито! ★');
+        setTimeout(() => {
+          // Remove monster from map
+          state.hero.exp += 500;
+          checkLevelUp();
+          for (let r = 0; r < MAP_ROWS; r++) {
+            for (let c = 0; c < MAP_COLS; c++) {
+              if (state.map[r][c].object === battle.targetObject) {
+                state.map[r][c].object = null;
+              }
+            }
+          }
+          // Sync player army
+          state.hero.army = battle.playerUnits.filter(u => u.count > 0).map(u => ({
+            type: u.type,
+            name: u.name,
+            count: u.count,
+            hp: u.maxHp,
+            maxHp: u.maxHp,
+            atk: u.atk,
+            def: u.def,
+            dmgMin: u.dmgMin,
+            dmgMax: u.dmgMax,
+            speed: u.speed,
+            icon: u.icon
+          }));
+          battle = null;
+          state.view = 'map';
+          document.getElementById('combatLog').style.display = 'none';
+          updateHUD();
+          render();
+        }, 1400);
+      } else if (alivePlayers.length === 0) {
+        updateCombatLog('☠️ ПОРАЗКА! Ваша армія розбита!');
+        setTimeout(() => {
+          alert('Вашого героя розбито! Гра перезапускається...');
+          location.reload();
+        }, 1200);
+      }
+    }
+
+    function checkLevelUp() {
+      if (state.hero.exp >= state.hero.level * 1000) {
+        state.hero.level++;
+        state.hero.atk += 1;
+        state.hero.def += 1;
+        audio.playFanfare();
+        alert(`Рівень підвищено! Лицар Крістіан досяг ${state.hero.level} рівня! (+1 до Атаки, +1 до Захисту)`);
+      }
+    }
+
+    // 5. Canvas Rendering Pipeline
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (state.view === 'map') {
+        renderAdventureMap();
+      } else if (state.view === 'battle') {
+        renderBattlefield();
+      }
+    }
+
+    function renderAdventureMap() {
+      // 1. Draw Tiles
+      for (let r = 0; r < MAP_ROWS; r++) {
+        for (let c = 0; c < MAP_COLS; c++) {
+          const tile = state.map[r][c];
+          const px = c * TILE_SIZE;
+          const py = r * TILE_SIZE;
+
+          // Terrain coloring
+          if (tile.terrain === 0) {
+            // Lush Grass
+            ctx.fillStyle = '#2d5a27';
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = '#3a6f32';
+            ctx.fillRect(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+          } else if (tile.terrain === 1) {
+            // Dirt Road
+            ctx.fillStyle = '#7a5a3a';
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = '#947048';
+            ctx.fillRect(px + 8, py + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+          } else if (tile.terrain === 2) {
+            // Mountain
+            ctx.fillStyle = '#4a4d52';
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = '#656a70';
+            ctx.beginPath();
+            ctx.moveTo(px + TILE_SIZE / 2, py + 6);
+            ctx.lineTo(px + TILE_SIZE - 6, py + TILE_SIZE - 6);
+            ctx.lineTo(px + 6, py + TILE_SIZE - 6);
+            ctx.fill();
+          } else if (tile.terrain === 3) {
+            // Forest Trees
+            ctx.fillStyle = '#1c3d18';
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = '#265420';
+            ctx.beginPath();
+            ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 18, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Grid lines
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+          ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+
+          // Objects
+          if (tile.object) {
+            ctx.font = '26px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(tile.object.icon, px + TILE_SIZE / 2, py + TILE_SIZE / 2);
+            // Label
+            ctx.font = 'bold 9px "Marcellus", serif';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 4;
+            ctx.fillText(tile.object.name.substring(0, 10), px + TILE_SIZE / 2, py + TILE_SIZE - 6);
+            ctx.shadowBlur = 0;
+          }
+        }
+      }
+
+      // 2. Draw Hero
+      const hx = state.hero.x * TILE_SIZE;
+      const hy = state.hero.y * TILE_SIZE;
+      // Hero Aura
+      ctx.fillStyle = 'rgba(223, 177, 91, 0.35)';
+      ctx.beginPath();
+      ctx.arc(hx + TILE_SIZE / 2, hy + TILE_SIZE / 2, 22, 0, Math.PI * 2);
+      ctx.fill();
+      // Hero Sprite / Icon
+      ctx.font = '32px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🏇', hx + TILE_SIZE / 2, hy + TILE_SIZE / 2);
+
+      // Hero flag
+      ctx.fillStyle = '#dfb15b';
+      ctx.fillRect(hx + 38, hy + 6, 12, 8);
+    }
+
+    function renderBattlefield() {
+      if (!battle) return;
+
+      // Draw Hex Arena Background
+      ctx.fillStyle = '#3a2d1d';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Combat Hex Grid
+      const HEX_W = 54;
+      const HEX_H = 46;
+      ctx.strokeStyle = 'rgba(223, 177, 91, 0.2)';
+      ctx.lineWidth = 1;
+
+      for (let r = 0; r < 11; r++) {
+        for (let c = 0; c < 15; c++) {
+          const cx = 50 + c * HEX_W + (r % 2 === 1 ? HEX_W / 2 : 0);
+          const cy = 40 + r * HEX_H;
+          drawHex(ctx, cx, cy, 26);
+        }
+      }
+
+      // Draw Player Units
+      battle.playerUnits.forEach(u => {
+        if (u.count <= 0) return;
+        const cx = 50 + u.hexX * HEX_W + (u.hexY % 2 === 1 ? HEX_W / 2 : 0);
+        const cy = 40 + u.hexY * HEX_H;
+
+        // Base
+        ctx.fillStyle = 'rgba(30, 58, 139, 0.5)';
+        ctx.beginPath();
+        ctx.arc(cx, cy + 12, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Icon
+        ctx.font = '32px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(u.icon, cx, cy);
+
+        // Count badge
+        ctx.fillStyle = '#1e3a8b';
+        ctx.fillRect(cx - 16, cy + 12, 32, 14);
+        ctx.strokeStyle = '#fff';
+        ctx.strokeRect(cx - 16, cy + 12, 32, 14);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(u.count, cx, cy + 20);
+      });
+
+      // Draw Enemy Units
+      battle.enemyUnits.forEach(u => {
+        if (u.count <= 0) return;
+        const cx = 50 + u.hexX * HEX_W + (u.hexY % 2 === 1 ? HEX_W / 2 : 0);
+        const cy = 40 + u.hexY * HEX_H;
+
+        // Base
+        ctx.fillStyle = 'rgba(139, 30, 30, 0.5)';
+        ctx.beginPath();
+        ctx.arc(cx, cy + 12, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Icon
+        ctx.font = '32px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(u.icon, cx, cy);
+
+        // Count badge
+        ctx.fillStyle = '#8b1e1e';
+        ctx.fillRect(cx - 16, cy + 12, 32, 14);
+        ctx.strokeStyle = '#fff';
+        ctx.strokeRect(cx - 16, cy + 12, 32, 14);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(u.count, cx, cy + 20);
+      });
+    }
+
+    function drawHex(ctx, x, y, radius) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        const hx = x + radius * Math.cos(angle);
+        const hy = y + radius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(hx, hy);
+        else ctx.lineTo(hx, hy);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // 6. User Interaction & Touch Controls
+    canvas.addEventListener('pointerdown', (e) => {
+      audio.init();
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
+
+      if (state.view === 'map') {
+        const tileCol = Math.floor(clickX / TILE_SIZE);
+        const tileRow = Math.floor(clickY / TILE_SIZE);
+
+        if (tileCol >= 0 && tileCol < MAP_COLS && tileRow >= 0 && tileRow < MAP_ROWS) {
+          handleMapClick(tileCol, tileRow);
+        }
+      } else if (state.view === 'battle') {
+        handleBattleClick(clickX, clickY);
+      }
+    });
+
+    function handleMapClick(tx, ty) {
+      const tile = state.map[ty][tx];
+      const dist = Math.abs(tx - state.hero.x) + Math.abs(ty - state.hero.y);
+
+      // Check obstacles
+      if (tile.terrain === 2) {
+        alert('Непрохідні гори!');
+        return;
+      }
+
+      // Check movement
+      if (dist === 1) {
+        if (state.hero.movePoints <= 0) {
+          alert('Герой вичерпав запас ходу на сьогодні! Натисніть "Кінець Ходу" ⏳');
+          return;
+        }
+
+        // Interacting with tile object
+        if (tile.object) {
+          const obj = tile.object;
+          if (obj.type === 'castle') {
+            switchView('town');
+            return;
+          } else if (obj.type === 'chest') {
+            audio.playPickup();
+            state.resources.gold += obj.gold;
+            state.hero.exp += obj.exp;
+            checkLevelUp();
+            alert(`Ви знайшли скарбницю! +${obj.gold} золота та +${obj.exp} досвіду!`);
+            tile.object = null;
+          } else if (obj.type === 'mine') {
+            audio.playPickup();
+            state.resources[obj.res] += 10;
+            alert(`Захоплено ${obj.name}! Отримано +10 ресурсів.`);
+            tile.object = null;
+          } else if (obj.type === 'artifact') {
+            audio.playPickup();
+            state.hero.atk += obj.atk;
+            alert(`Знайдено реліквію: ${obj.name}! +${obj.atk} до Атаки!`);
+            tile.object = null;
+          } else if (obj.type === 'monster') {
+            startBattle(obj);
+            return;
+          }
+        }
+
+        // Move hero
+        audio.playMove();
+        state.hero.x = tx;
+        state.hero.y = ty;
+        state.hero.movePoints--;
+        updateHUD();
+        render();
+      }
+    }
+
+    function handleBattleClick(clickX, clickY) {
+      if (!battle) return;
+
+      // Find enemy clicked
+      const HEX_W = 54;
+      const HEX_H = 46;
+
+      for (let i = 0; i < battle.enemyUnits.length; i++) {
+        const u = battle.enemyUnits[i];
+        if (u.count <= 0) continue;
+        const cx = 50 + u.hexX * HEX_W + (u.hexY % 2 === 1 ? HEX_W / 2 : 0);
+        const cy = 40 + u.hexY * HEX_H;
+        const d = Math.hypot(clickX - cx, clickY - cy);
+
+        if (d < 30) {
+          // Player's first active unit attacks clicked enemy
+          const activePlayerUnit = battle.playerUnits.find(pu => pu.count > 0);
+          if (activePlayerUnit) {
+            unitAttack(activePlayerUnit, u);
+            render();
+          }
+          break;
+        }
+      }
+    }
+
+    // 7. Navigation & Modals View
+    function switchView(viewName) {
+      audio.init();
+      state.view = viewName;
+
+      document.querySelectorAll('.btn-homm').forEach(b => b.classList.remove('active'));
+      document.getElementById('townModal').classList.add('hidden');
+      document.getElementById('heroModal').classList.add('hidden');
+      document.getElementById('spellModal').classList.add('hidden');
+
+      if (viewName === 'map') {
+        document.getElementById('btnMap').classList.add('active');
+      } else if (viewName === 'town') {
+        document.getElementById('btnTown').classList.add('active');
+        document.getElementById('townModal').classList.remove('hidden');
+        renderTownBuildings();
+      } else if (viewName === 'hero') {
+        document.getElementById('btnHero').classList.add('active');
+        document.getElementById('heroModal').classList.remove('hidden');
+        renderHeroArmy();
+      } else if (viewName === 'spells') {
+        document.getElementById('btnSpells').classList.add('active');
+        document.getElementById('spellModal').classList.remove('hidden');
+        renderSpellbook();
+      }
+
+      render();
+    }
+
+    function renderTownBuildings() {
+      const cont = document.getElementById('townBuildings');
+      cont.innerHTML = '';
+      state.buildings.forEach(b => {
+        const card = document.createElement('div');
+        card.className = `building-card ${b.built ? 'built' : ''}`;
+        card.innerHTML = `
+          <div class="building-icon">${b.icon}</div>
+          <div class="building-name">${b.name}</div>
+          <div class="building-desc">${b.desc}</div>
+          ${!b.built ? `<button class="btn-recruit" onclick="buyBuilding('${b.id}')">Збудувати (${b.cost.gold} золота)</button>` : '<span style="color:#73d162; font-size:11px;">✓ Збудовано</span>'}
+          ${b.built && b.recruit ? `<button class="btn-recruit" onclick="recruitCreature('${b.recruit.type}', ${b.recruit.cost})">Найм ${b.recruit.name} (${b.recruit.cost} 💰)</button>` : ''}
+        `;
+        cont.appendChild(card);
+      });
+    }
+
+    window.buyBuilding = function(id) {
+      audio.init();
+      const b = state.buildings.find(item => item.id === id);
+      if (!b || b.built) return;
+
+      if (state.resources.gold >= b.cost.gold) {
+        state.resources.gold -= b.cost.gold;
+        b.built = true;
+        audio.playFanfare();
+        updateHUD();
+        renderTownBuildings();
+      } else {
+        alert('Недостатньо золота для будівництва!');
+      }
+    };
+
+    window.recruitCreature = function(type, cost) {
+      audio.init();
+      if (state.resources.gold < cost * 5) {
+        alert('Недостатньо золота для найму 5 воїнів!');
+        return;
+      }
+      state.resources.gold -= cost * 5;
+      audio.playPickup();
+      let stack = state.hero.army.find(u => u.type === type);
+      if (stack) {
+        stack.count += 5;
+      } else {
+        const b = state.buildings.find(b => b.recruit && b.recruit.type === type);
+        state.hero.army.push({
+          type: type,
+          name: b.recruit.name,
+          count: 5,
+          hp: 15,
+          maxHp: 15,
+          atk: 5,
+          def: 5,
+          dmgMin: 2,
+          dmgMax: 4,
+          speed: 4,
+          icon: b.recruit.icon
+        });
+      }
+      updateHUD();
+      alert(`Успішно найнято 5 воїнів!`);
+    };
+
+    function renderHeroArmy() {
+      const cont = document.getElementById('heroArmyList');
+      cont.innerHTML = '';
+      state.hero.army.forEach(u => {
+        const card = document.createElement('div');
+        card.style.cssText = 'border:1px solid var(--gold); border-radius:4px; padding:6px 10px; background:#181008; font-size:12px; text-align:center; min-width:80px;';
+        card.innerHTML = `<div style="font-size:24px;">${u.icon}</div><strong>${u.name}</strong><br><span style="color:var(--gold-light);">${u.count} од.</span>`;
+        cont.appendChild(card);
+      });
+      document.getElementById('heroLevel').textContent = state.hero.level;
+      document.getElementById('heroExp').textContent = state.hero.exp;
+      document.getElementById('heroAtk').textContent = state.hero.atk;
+      document.getElementById('heroDef').textContent = state.hero.def;
+      document.getElementById('heroPwr').textContent = state.hero.pwr;
+      document.getElementById('heroKno').textContent = state.hero.kno;
+      document.getElementById('heroMana').textContent = `${state.hero.mana}/${state.hero.maxMana}`;
+      document.getElementById('heroMove').textContent = `${Math.floor((state.hero.movePoints / state.hero.maxMovePoints) * 100)}%`;
+    }
+
+    function renderSpellbook() {
+      const cont = document.getElementById('spellList');
+      cont.innerHTML = '';
+      state.spells.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'building-card';
+        card.innerHTML = `
+          <div style="font-size:28px;">${s.icon}</div>
+          <div class="building-name">${s.name}</div>
+          <div class="building-desc">${s.desc}</div>
+          <span style="font-size:11px; color:var(--gold);">Мана: ${s.cost} MP</span>
+        `;
+        cont.appendChild(card);
+      });
+    }
+
+    // 8. End Turn Handler
+    function endTurn() {
+      audio.init();
+      audio.playFanfare();
+
+      // Date advance
+      state.date.day++;
+      if (state.date.day > 7) {
+        state.date.day = 1;
+        state.date.week++;
+        if (state.date.week > 4) {
+          state.date.week = 1;
+          state.date.month++;
+          alert('Астрологи оголосили Місяць Героїв! Приріст істот подвоєно!');
+        } else {
+          alert('Астрологи оголосили новий тиждень! Приріст військ у замку поповнено.');
+        }
+      }
+
+      // Income
+      state.resources.gold += 1000;
+      state.hero.movePoints = state.hero.maxMovePoints;
+      state.hero.mana = state.hero.maxMana;
+
+      updateHUD();
+      render();
+    }
+
+    function updateHUD() {
+      document.getElementById('resGold').textContent = state.resources.gold;
+      document.getElementById('resWood').textContent = state.resources.wood;
+      document.getElementById('resOre').textContent = state.resources.ore;
+      document.getElementById('resMercury').textContent = state.resources.mercury;
+      document.getElementById('resSulfur').textContent = state.resources.sulfur;
+      document.getElementById('resCrystals').textContent = state.resources.crystals;
+      document.getElementById('resGems').textContent = state.resources.gems;
+
+      document.getElementById('txtMonth').textContent = state.date.month;
+      document.getElementById('txtWeek').textContent = state.date.week;
+      document.getElementById('txtDay').textContent = state.date.day;
+    }
+
+    // Event Listeners
+    document.getElementById('btnMap').addEventListener('click', () => switchView('map'));
+    document.getElementById('btnTown').addEventListener('click', () => switchView('town'));
+    document.getElementById('btnHero').addEventListener('click', () => switchView('hero'));
+    document.getElementById('btnSpells').addEventListener('click', () => switchView('spells'));
+    document.getElementById('btnEndTurn').addEventListener('click', endTurn);
+
+    // Initial Start
+    initMap();
+    updateHUD();
+    render();
+  </script>
+</body>
+</html>
